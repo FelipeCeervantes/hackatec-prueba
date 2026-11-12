@@ -25,6 +25,10 @@ const cli = (() => { try { execFileSync('claude', ['--version'], { stdio: 'ignor
 const claude = (...args) => { if (!cli) return false; try { execFileSync(cli, args, { cwd: raiz, stdio: 'ignore', timeout: 60000 }); return true } catch { return false } }
 for (const scope of ['local', 'user']) if (claude('plugin', 'uninstall', id, '--scope', scope)) hecho.push(`plugin quitado (${scope})`)
 if (claude('plugin', 'marketplace', 'remove', mk)) hecho.push('marketplace quitado')
+// Los esenciales que instaló /preparar (solo en esta carpeta, scope local).
+let esenciales = []
+try { esenciales = Object.keys(JSON.parse(fs.readFileSync(path.join(raiz, '.claude', 'esenciales.json'), 'utf8')).plugins || {}) } catch {}
+for (const p of esenciales) if (claude('plugin', 'uninstall', p, '--scope', 'local')) hecho.push(`quitado ${p.split('@')[0]}`)
 
 // 2. Lo que el CLI deja o lo que haya sin CLI: carpetas, datos e índices en ~/.claude/plugins.
 const plugins = path.join(os.homedir(), '.claude', 'plugins')
@@ -52,7 +56,10 @@ limpiarJson(path.join(plugins, 'installed_plugins.json'))
 limpiarJson(path.join(plugins, 'known_marketplaces.json'))
 
 // 3. Esta carpeta: el repo pide la oficina en .claude/settings.json; la apagamos solo aquí para que no se reinstale.
-limpiarJson(path.join(raiz, '.claude', 'settings.local.json'), j => ({ ...j, enabledPlugins: { ...(j.enabledPlugins || {}), [id]: false } }))
+limpiarJson(path.join(raiz, '.claude', 'settings.local.json'), j => {
+  const activos = Object.fromEntries(Object.entries(j.enabledPlugins || {}).filter(([k]) => !esenciales.includes(k)))
+  return { ...j, enabledPlugins: { ...activos, [id]: false } }
+})
 if (!fs.existsSync(path.join(raiz, '.claude', 'settings.local.json'))) {
   fs.writeFileSync(path.join(raiz, '.claude', 'settings.local.json'), JSON.stringify({ enabledPlugins: { [id]: false } }, null, 2) + '\n')
   hecho.push('oficina apagada en esta carpeta')

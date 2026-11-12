@@ -1,0 +1,14 @@
+{
+  "marketplaces": ["anthropics/claude-plugins-official", "addyosmani/agent-skills"],
+  "plugins": {
+    "frontend-design@claude-plugins-official": "Interfaces bonitas, no genéricas",
+    "feature-dev@claude-plugins-official": "Flujo guiado para construir funciones",
+    "code-review@claude-plugins-official": "Revisión de código antes de entregar",
+    "commit-commands@claude-plugins-official": "Commits, push y PRs más fáciles",
+    "code-simplifier@claude-plugins-official": "Limpia y simplifica el código",
+    "playwright@claude-plugins-official": "Probar la página web en un navegador real",
+    "context7@claude-plugins-official": "Documentación actualizada de librerías",
+    "agent-skills@addy-agent-skills": "Skills de spec, plan, build, test y review"
+  },
+  "skills": { "vercel-labs/skills find-skills": "Buscador de más skills" }
+}
