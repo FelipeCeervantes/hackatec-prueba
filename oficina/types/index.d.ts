@@ -14,6 +14,7 @@ export type Equipo = {
 export type Yo = { estado: string; t: number }
 export type Anim = { rol: string; start: number }
 export type Aviso = { t: number; texto: string }
+export type Solicitud = { numero: number; login: string; nombre: string }
 export type Escena = { tipo: 'luna' | 'adios' | 'fiesta' | 'alerta'; start: number; mensaje?: string; auto?: boolean }
 export type Vista = {
   modo: 'oficina' | 'pro'
@@ -32,6 +33,7 @@ declare module 'claude-code' {
       guia: number
       tick: number
       actividad: Aviso[]
+      solicitudes: Solicitud[]
     }
   }
 }

@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Aviso, Anim, Equipo, Escena, Miembro, Personaje, Progreso, Tarea, Vista, Yo } from '../types'
+import type { Aviso, Anim, Equipo, Escena, Miembro, Personaje, Progreso, Solicitud, Tarea, Vista, Yo } from '../types'
 import {
   ACCESORIOS, COLORES, ETIQUETA, miembros, parseIdentidad, parseTarea, pasosGuia, poseDe, progresoTexto, svgOficina,
 } from './dibujo'
@@ -37,8 +37,51 @@ let alertaT = 0
 let primera = true
 let lunaAuto = false
 const estados: Record<string, string> = {}
+let repoActual = '' // "dueño/repo" del remoto origin
+let token = ''
+const avisadas = new Set<number>()
 
 const json = (t: string) => { try { return JSON.parse(t) } catch { return {} } }
+
+// --- Solicitudes para unirse (solo el coordinador) ---------------------------------------
+// Los integrantes abren un issue en el repo público <dueño>/hackatec-entrada con "repo: <este repo>".
+// Aquí se listan y, con un clic del coordinador, se les invita usando su propia sesión de GitHub.
+const solicitudesA = atom({ plugin: 'oficina', key: 'solicitudes' } as const, [] as Solicitud[])
+const entrada = () => `${repoActual.split('/')[0]}/hackatec-entrada`
+
+async function gh($: $, metodo: string, ruta: string, cuerpo?: unknown): Promise<any> {
+  if (!token) token = (/^password=(.*)$/m.exec(await git($, ['credential', 'fill'], 'protocol=https\nhost=github.com\n\n')) || [])[1] || ''
+  if (!token) return null
+  const args = ['curl', '-s', '-X', metodo, '-H', '@-', '-H', 'Accept: application/vnd.github+json', `https://api.github.com${ruta}`]
+  if (cuerpo !== undefined) args.push('-d', JSON.stringify(cuerpo))
+  try {
+    const r = await $.process.run(args, { stdin: `Authorization: Bearer ${token}\n`, timeoutMs: 20000 }) // el token va por stdin, no en la línea de comandos
+    return r.stdout ? json(r.stdout) : {}
+  } catch { return null }
+}
+
+async function sondearSolicitudes($: $) {
+  if ((await read($, eqA)).yo.rol !== 'coordinador' || !repoActual) return
+  const issues = await gh($, 'GET', `/repos/${entrada()}/issues?state=open&per_page=30`)
+  if (!Array.isArray(issues)) return
+  const sol: Solicitud[] = issues
+    .filter(i => !i.pull_request && String(i.body || '').includes(`repo: ${repoActual}`))
+    .map(i => ({ numero: i.number, login: i.user.login, nombre: String(i.title).replace(/^[^:]*:\s*/, '').slice(0, 30) || i.user.login }))
+  for (const s of sol) if (!avisadas.has(s.numero)) { avisadas.add(s.numero); $.ui.toast(`${s.nombre} (@${s.login}) quiere unirse al equipo: apruébalo en la oficina.`) }
+  await update($, solicitudesA, () => sol)
+}
+
+async function responder($: $, s: Solicitud, invitar: boolean) {
+  if (invitar) await gh($, 'PUT', `/repos/${repoActual}/collaborators/${s.login}`, { permission: 'push' })
+  await gh($, 'POST', `/repos/${entrada()}/issues/${s.numero}/comments`, {
+    body: invitar
+      ? `¡Listo, ${s.nombre}! Te envié la invitación. Acéptala aquí: https://github.com/${repoActual}/invitations`
+      : 'Esta solicitud no se aprobó. Si es un error, avísale al coordinador.',
+  })
+  await gh($, 'PATCH', `/repos/${entrada()}/issues/${s.numero}`, { state: 'closed' })
+  await update($, solicitudesA, l => l.filter(x => x.numero !== s.numero))
+  $.ui.toast(invitar ? `Invitación enviada a @${s.login}` : `Solicitud de @${s.login} rechazada`)
+}
 const rolDeRama = (ref: string) => (/^origin\/(integrante-\d)\//.exec(ref) || [])[1]
 
 async function git($: $, args: string[], stdin?: string): Promise<string> {
@@ -227,6 +270,8 @@ export const register: Register = on => {
     }
     $.clock.every(15000, () => void sondear($))
     $.clock.every(5000, () => void latido($))
+    repoActual = (/github\.com[/:]([^/]+\/[^/\s]+?)(\.git)?\s*$/.exec(await git($, ['remote', 'get-url', 'origin'])) || [])[1] || ''
+    if (eq.yo.rol === 'coordinador') { void sondearSolicitudes($); $.clock.every(30000, () => void sondearSolicitudes($)) }
     return res
   })
 
@@ -293,6 +338,7 @@ export const register: Register = on => {
       )
     }
     const menu = vista.panel !== '' // el menú sigue abierto mientras se usa una de sus opciones
+    const solicitudes = eq.yo.rol === 'coordinador' ? await read($, solicitudesA) : []
 
     return (
       <Box flexDirection="column" gap={1}>
@@ -312,6 +358,19 @@ export const register: Register = on => {
           </Box>
         )}
         {guiaTexto && !conMascotas && <Text>{guiaTexto}</Text>}
+
+        {solicitudes.length > 0 && (
+          <Box flexDirection="column">
+            <Text bold color="yellow">Quieren unirse al equipo</Text>
+            {solicitudes.map(s => (
+              <Box key={`sol-${s.numero}`} flexDirection="row" gap={1}>
+                <Text>{s.nombre} <Text dimColor>@{s.login}</Text></Text>
+                <Button key={`inv-${s.numero}`} label="Invitar" variant="primary" onPress={() => responder($, s, true)} />
+                <Button key={`rec-${s.numero}`} label="Rechazar" dimColor onPress={() => responder($, s, false)} />
+              </Box>
+            ))}
+          </Box>
+        )}
 
         {/* Un solo botón visible; lo demás vive en Opciones. */}
         <Box flexDirection="row" flexWrap="wrap" gap={1}>
