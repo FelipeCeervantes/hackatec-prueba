@@ -1,0 +1,2 @@
+nombre: Felipe
+rol: coordinador

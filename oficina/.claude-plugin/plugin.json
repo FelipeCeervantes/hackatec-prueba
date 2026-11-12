@@ -1,0 +1,9 @@
+{
+  "name": "oficina",
+  "version": "0.1.0",
+  "description": "Oficina pixel art del equipo Hackatec: un panel junto al chat con el estado y el avance de cada integrante.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "Equipo Hackatec"
+  }
+}

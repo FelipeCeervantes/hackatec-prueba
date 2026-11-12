@@ -1,0 +1,5 @@
+CLAUDE.local.md
+.env
+.claude/settings.local.json
+.claude/launch.json
+vista-previa.html

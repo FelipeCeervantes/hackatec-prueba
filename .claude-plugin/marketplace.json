@@ -1,0 +1,11 @@
+{
+  "name": "hackatec-prueba",
+  "owner": { "name": "Equipo Hackatec" },
+  "plugins": [
+    {
+      "name": "oficina",
+      "source": "./oficina",
+      "description": "Oficina pixel art del equipo: un panel junto al chat con el estado y el avance de cada integrante."
+    }
+  ]
+}

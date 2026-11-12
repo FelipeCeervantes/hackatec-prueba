@@ -1,0 +1,6 @@
+{
+  "extraKnownMarketplaces": {
+    "hackatec-prueba": { "source": { "source": "github", "repo": "FelipeCeervantes/hackatec-prueba" } }
+  },
+  "enabledPlugins": { "oficina@hackatec-prueba": true }
+}
