@@ -143,7 +143,10 @@ async function sondear($: $) {
   const porArchivo: Record<string, Tarea> = {}
   const tomar = (ruta: string, texto: string) => {
     const m = /^tareas\/((integrante-\d|coordinador)-[^/]+)\.md$/.exec(ruta)
-    if (m) porArchivo[m[1]] = { archivo: m[1], rol: m[2], ...parseTarea(texto, m[1]) }
+    if (!m) return
+    const previa = porArchivo[m[1]]
+    if (previa && /^hecha/.test(previa.estado)) return // si en main ya está hecha, eso manda (la rama o la copia local pueden ir atrasadas)
+    porArchivo[m[1]] = { archivo: m[1], rol: m[2], ...parseTarea(texto, m[1]) }
   }
   const leerRef = async (ref: string, rol?: string) => {
     for (const ruta of (await git($, ['ls-tree', '--name-only', ref, 'tareas/'])).split('\n')) {
