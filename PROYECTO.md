@@ -1,14 +1,14 @@
-# Cuenta regresiva (práctica)
+# Hola mundo (práctica)
 
 ## El problema
-Probar el flujo del equipo con algo pequeño: un contador de 10 segundos.
+Probar el flujo del equipo con la tarea más pequeña posible.
 
 ## La idea
-Una página web con un contador de 10 segundos que, al llegar a cero, muestra "💤 ¡Hora de dormir!". No hace nada en la computadora: solo se ve en la página.
+Una página web que diga "¡Hola, mundo!".
 
 ## El plan
-- Carlos (integrante-1): hace la página del contador.
+- Carlos (integrante-1): hace la página.
 - Felipe (coordinador): revisa y une la rama a `main`.
 
 ## Qué se demuestra al final
-Abrir `contador/index.html`, presionar "Iniciar" y ver el mensaje al llegar a cero.
+Abrir `hola/index.html` y ver el saludo.
