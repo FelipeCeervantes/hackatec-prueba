@@ -18,8 +18,10 @@ Datos que dio el usuario (pueden venir vacíos): `$ARGUMENTS`.
    - **Antes de instalar, muestra la lista al usuario y pide su OK.** Luego instala con `npx skills add <owner/repo> --skill <nombre>`, dentro del proyecto (no global).
    - Si `npx` no existe o no hay resultados, sigue sin skills y avísalo. Como alternativa puede usar `/plugin` para buscar en el marketplace.
 5. **Instala la oficina y compruébalo.** El plugin vive en este repo: su marketplace es el `name` de `.claude-plugin/marketplace.json` y el repo es el `origin` de git (dueño/repo).
-   - Corre `claude plugin marketplace add <dueño/repo> --scope local` y luego `claude plugin install oficina@<marketplace> --scope local`.
-   - Verifica con `claude plugin list` que `oficina@<marketplace>` diga enabled. Si falló, corre `claude plugin marketplace update <marketplace>` y reintenta una vez.
-   - Si el comando `claude` no existe en esta laptop, no pasa nada: dile que al abrir la carpeta en la pestaña Code acepte confiar en la carpeta e instalar el plugin de la oficina; si no se lo ofrece, que escriba `/plugin install oficina@<marketplace>`.
+   - Busca el CLI de Claude: `claude` si está en el PATH; si no, el que trae la app de escritorio (en Windows, PowerShell: `Get-ChildItem "$env:LOCALAPPDATA\Claude-Data" -Recurse -Filter claude.exe -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName`; en Mac, busca `claude` dentro de `~/Library/Application Support/Claude`). Llámalo `<claude>`.
+   - Desde esta carpeta corre `<claude> plugin marketplace add <dueño/repo> --scope local` y luego `<claude> plugin install oficina@<marketplace> --scope local`.
+   - Verifica con `<claude> plugin list` que `oficina@<marketplace>` diga enabled. Si falló, corre `<claude> plugin marketplace update <marketplace>` y reintenta una vez.
+   - Si no encuentras ningún CLI, dile que al abrir la carpeta en la pestaña Code acepte confiar en la carpeta e instalar el plugin de la oficina; si no se lo ofrece, que escriba `/plugin install oficina@<marketplace>`.
+   - Avísale que para ver el panel debe cerrar esta sesión y abrir una nueva en esta carpeta.
    - Dile que la oficina aparece como un panel junto al chat cada vez que abra esta carpeta.
 6. Termina con este mensaje corto: su nombre y rol, que ya puede cerrar la sesión, y que el día del evento abre esta carpeta en la pestaña Code y escribe "haz mis tareas". Si ya hay tareas pendientes de su rol, menciónalas.

@@ -13,7 +13,16 @@ const id = `oficina@${mk}`
 const hecho = []
 
 // 1. Con el CLI de Claude, si está disponible (no toca .claude/settings.json, que es del repo).
-const claude = (...args) => { try { execFileSync('claude', args, { cwd: raiz, stdio: 'ignore', timeout: 60000 }); return true } catch { return false } }
+// El CLI: 'claude' del PATH o el que trae la app de escritorio (Windows: %LOCALAPPDATA%\Claude-Data\...\claude.exe).
+const buscarCli = () => {
+  const base = path.join(process.env.LOCALAPPDATA || '', 'Claude-Data')
+  const encontrados = []
+  const recorrer = (d, n) => { if (n > 6) return; let es = []; try { es = fs.readdirSync(d, { withFileTypes: true }) } catch { return } for (const e of es) { const p = path.join(d, e.name); if (e.isDirectory()) recorrer(p, n + 1); else if (e.name === 'claude.exe') encontrados.push(p) } }
+  if (fs.existsSync(base)) recorrer(base, 0)
+  return encontrados.sort((x, y) => fs.statSync(y).mtimeMs - fs.statSync(x).mtimeMs)[0]
+}
+const cli = (() => { try { execFileSync('claude', ['--version'], { stdio: 'ignore', timeout: 30000 }); return 'claude' } catch { return buscarCli() } })()
+const claude = (...args) => { if (!cli) return false; try { execFileSync(cli, args, { cwd: raiz, stdio: 'ignore', timeout: 60000 }); return true } catch { return false } }
 for (const scope of ['local', 'user']) if (claude('plugin', 'uninstall', id, '--scope', scope)) hecho.push(`plugin quitado (${scope})`)
 if (claude('plugin', 'marketplace', 'remove', mk)) hecho.push('marketplace quitado')
 
