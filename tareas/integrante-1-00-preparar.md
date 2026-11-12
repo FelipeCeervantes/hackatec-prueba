@@ -1,4 +1,5 @@
-estado: pendiente
+estado: en-progreso: Carlos
+inicio: 2026-11-11T23:15:38-06:00
 rol: integrante-1
 depende-de: ninguna
 estimado: 10 min
