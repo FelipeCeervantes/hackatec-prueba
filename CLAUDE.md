@@ -10,11 +10,11 @@ Tu nombre y rol están en `CLAUDE.local.md` (es personal y no se sube al repo).
 
 ## Flujo
 1. Siempre `git pull` antes de empezar. Si aparecen skills nuevas en `.claude/skills/` (las sube el coordinador), úsalas.
-2. Las tareas viven en `tareas/<rol>-NN.md`. Solo toma las de **tu rol** con `estado: pendiente`.
+2. Las tareas viven en `tareas/<rol>-NN.md`. Solo toma las de **tu rol** con `estado: pendiente`, y primero las tuyas con `estado: cambios-pedidos` (en tu rama: atiende la sección "Cambios pedidos" y vuelve a dejarla en `lista-para-revision`).
 3. Al tomar una tarea, crea tu rama `<rol>/<tarea>` (ej. `integrante-1/03-api-datos`), cambia su estado a `en-progreso: <nombre>`, agrega la línea `inicio: <fecha y hora ISO>` y haz commit y push de la rama. Nunca hagas push directo a `main`.
 4. Cada vez que termines un punto de "Listo cuando", márcalo `- [x]`, haz commit y push de tu rama: así avanza la barra de progreso de la oficina y el equipo ve cuánto falta.
 5. Al terminar: `estado: lista-para-revision`, haz push de la rama y abre un PR (o avisa al coordinador si no hay `gh`).
-6. El **coordinador** revisa, pide cambios o hace el merge. Solo el coordinador hace merge a `main`.
+6. El **coordinador** revisa con `/revisar` (puede dejarlo automático con `/loop 5m /revisar`): si cumple, la une a `main` y la marca `estado: hecha`; si no, la deja en `estado: cambios-pedidos` con lo que falta. Solo el coordinador hace merge a `main`.
 
 ## Reglas
 - Cambios pequeños y que funcionen. Mejor algo simple que ya corre que algo grande a medias.

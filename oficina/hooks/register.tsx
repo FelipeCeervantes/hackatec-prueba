@@ -196,6 +196,7 @@ async function sondear($: $) {
 
 const categoria = (estado: string) =>
   /^en-progreso/.test(estado) ? 'en curso' : /^lista/.test(estado) ? 'en revisión' : /^bloqueado/.test(estado) ? 'bloqueada'
+    : /^cambios/.test(estado) ? 'con cambios pedidos'
     : /^hecha/.test(estado) ? 'hecha' : 'pendiente'
 
 // Cada 5 s: redibuja (dormir, explorar) y manda a todos a la luna cuando nadie está activo.
@@ -450,6 +451,7 @@ export const register: Register = on => {
             ))}
           </Box>
           {lista('Bloqueadas', 'bloqueada', 5, 'red')}
+          {lista('Con cambios pedidos', 'con cambios pedidos', 5, 'yellow')}
           {lista('En revisión', 'en revisión', 5, 'yellow')}
           {lista('Pendientes', 'pendiente', 6)}
           {lista('Hechas', 'hecha', 5)}
@@ -457,8 +459,8 @@ export const register: Register = on => {
           {tareas.length > 0 && (
             <Box flexDirection="column">
               <Text bold>Resumen</Text>
-              <Text color="green" mono>{barra({ hechos: de('hecha').length, total: tareas.length })} {Math.round((de('hecha').length / tareas.length) * 100)}% del proyecto ({de('hecha').length}/{tareas.length} tareas)</Text>
-              <Text dimColor>Trabajo estimado que falta: {duracion(tareas.filter(t => categoria(t.estado) !== 'hecha').reduce((s, t) => s + Math.max(0, t.estimado - (t.inicio ? (now - t.inicio) / 60000 : 0)), 0))}</Text>
+              <Text color="green" mono>{barra({ hechos: de('hecha').length, total: tareas.length })} {Math.round((de('hecha').length / tareas.length) * 100)}% del proyecto ({de('hecha').length}/{tareas.length} tareas{de('en revisión').length ? `, ${de('en revisión').length} en revisión` : ''})</Text>
+              <Text dimColor>Trabajo estimado que falta: {duracion(tareas.filter(t => !['hecha', 'en revisión'].includes(categoria(t.estado))).reduce((s, t) => s + Math.max(0, t.estimado - (t.inicio ? (now - t.inicio) / 60000 : 0)), 0))}</Text>
               <Text dimColor>Hechas por persona: {ms.map(m => `${m.nombre} ${tareas.filter(t => t.rol === m.rol && categoria(t.estado) === 'hecha').length}`).join(' · ')}</Text>
             </Box>
           )}
