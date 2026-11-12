@@ -1,4 +1,5 @@
-estado: lista-para-revision
+estado: hecha
+revisado: 2026-11-11T23:23:40-06:00
 inicio: 2026-11-11T23:15:38-06:00
 rol: integrante-1
 depende-de: ninguna
