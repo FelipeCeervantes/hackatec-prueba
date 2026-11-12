@@ -2,6 +2,7 @@ export type Miembro = { nombre: string; rol: string }
 export type Progreso = { hechos: number; total: number; estimado: number; inicio: number; titulo: string }
 export type Tarea = Progreso & { archivo: string; rol: string; estado: string }
 export type Personaje = { color?: string; accesorio?: string }
+export type Compu = { cpu: string; nucleos: number; ram: number; disco: number; gpu: string; so: string; nivel: 'básica' | 'media' | 'potente'; t: number }
 export type Equipo = {
   yo: Miembro
   equipo: Miembro[]
@@ -12,6 +13,7 @@ export type Equipo = {
   tareas: Tarea[]
   entrega?: number // hora límite del evento (ms), de .claude/oficina.json
   proyecto?: string // PROYECTO.md de main: el problema, la idea y el plan
+  compus?: Record<string, Compu> // PC check de cada quien (rama oficina-equipos)
 }
 export type Yo = { estado: string; t: number }
 export type Anim = { rol: string; start: number }

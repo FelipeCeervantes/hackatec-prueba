@@ -20,6 +20,7 @@ Tu nombre y rol están en `CLAUDE.local.md` (es personal y no se sube al repo).
 - Cambios pequeños y que funcionen. Mejor algo simple que ya corre que algo grande a medias.
 - No toques archivos del área de otro rol sin dejar una nota en la tarea.
 - Nunca subas claves, tokens ni `.env` al repo.
+- Cuida tu compu: la oficina publica su nivel en la rama `oficina-equipos` (`equipos.json`). Si la tuya es `básica` o tiene poco disco, no instales nada pesado (Docker, modelos locales, emuladores); si una tarea lo exige, márcala `bloqueado: mi compu no aguanta <qué>`.
 - Si estás bloqueado, o te falta una skill o extensión que no puedes instalar, escribe `bloqueado: <motivo>` en la tarea y haz push. El coordinador la comparte o hace él esa parte.
 - Para ahorrar uso del plan Pro: los integrantes usan Sonnet; el coordinador puede usar Opus para revisar.
 

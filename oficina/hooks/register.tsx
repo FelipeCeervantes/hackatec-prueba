@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Aviso, Anim, Equipo, Escena, Miembro, Personaje, Progreso, Solicitud, Tarea, Vista, Yo } from '../types'
+import type { Aviso, Anim, Compu, Equipo, Escena, Miembro, Personaje, Progreso, Solicitud, Tarea, Vista, Yo } from '../types'
 import {
   ACCESORIOS, COLORES, ETIQUETA, miembros, parseIdentidad, parseTarea, pasosGuia, poseDe, progresoTexto, svgOficina,
 } from './dibujo'
@@ -117,6 +117,43 @@ async function publicar($: $, rama: string, archivo: string, contenido: string) 
   if (commit) await git($, ['push', '-q', '-f', 'origin', `${commit}:refs/heads/${rama}`])
 }
 
+// --- PC check -----------------------------------------------------------------------------
+// Al abrir la sesión se revisa la compu (procesador, núcleos, RAM, disco libre, video y sistema),
+// se clasifica y se comparte en la rama oficina-equipos para repartir tareas que sí aguante.
+// (15 GB y no 16: una laptop de 16 GB reporta unos 15.3)
+export const nivelDe = (c: { ram: number; nucleos: number }): Compu['nivel'] =>
+  c.ram < 6 || c.nucleos < 4 ? 'básica' : c.ram >= 15 && c.nucleos >= 8 ? 'potente' : 'media'
+
+const PS_COMPU = "$c=Get-CimInstance Win32_Processor|Select-Object -First 1;$m=Get-CimInstance Win32_ComputerSystem;" +
+  "$d=Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\";$g=(Get-CimInstance Win32_VideoController|Select-Object -ExpandProperty Name) -join ' / ';" +
+  "$o=Get-CimInstance Win32_OperatingSystem;[pscustomobject]@{cpu=$c.Name.Trim();nucleos=[int]$c.NumberOfLogicalProcessors;" +
+  "ram=[math]::Round($m.TotalPhysicalMemory/1GB,1);disco=[math]::Round($d.FreeSpace/1GB,1);gpu=$g;so=$o.Caption}|ConvertTo-Json -Compress"
+
+async function revisarCompu($: $): Promise<Omit<Compu, 'nivel' | 't'> | null> {
+  const correr = async (argv: string[]) => { try { const r = await $.process.run(argv, { timeoutMs: 30000 }); return r.exitCode === 0 ? r.stdout.trim() : '' } catch { return '' } }
+  const win = json(await correr(['powershell', '-NoProfile', '-Command', PS_COMPU]))
+  if (win.cpu) return { cpu: String(win.cpu), nucleos: Number(win.nucleos) || 0, ram: Number(win.ram) || 0, disco: Number(win.disco) || 0, gpu: String(win.gpu || ''), so: String(win.so || 'Windows') }
+  const cpu = await correr(['sysctl', '-n', 'machdep.cpu.brand_string']) // Mac
+  if (!cpu) return null
+  const df = (await correr(['df', '-g', '/'])).split('\n')[1]?.trim().split(/\s+/) || []
+  return { cpu, nucleos: Number(await correr(['sysctl', '-n', 'hw.ncpu'])) || 0, ram: Math.round(Number(await correr(['sysctl', '-n', 'hw.memsize'])) / 2 ** 30 * 10) / 10,
+    disco: Number(df[3]) || 0, gpu: '', so: 'macOS' }
+}
+
+async function compartirCompu($: $) {
+  const c = await revisarCompu($)
+  if (!c) return
+  const eq = await read($, eqA), clave = eq.yo.nombre.toLowerCase()
+  const nueva: Compu = { ...c, nivel: nivelDe(c), t: await $.clock.now() }
+  await update($, eqA, e => ({ ...e, compus: { ...(e.compus || {}), [clave]: nueva } }))
+  await git($, ['fetch', '-q', 'origin', 'oficina-equipos'])
+  const todos = json(await git($, ['show', 'origin/oficina-equipos:equipos.json'])) as Record<string, Compu>
+  const previa = todos[clave]
+  if (previa && previa.cpu === nueva.cpu && previa.ram === nueva.ram && Math.abs(previa.disco - nueva.disco) < 5) return // nada cambió
+  todos[clave] = nueva
+  await publicar($, 'oficina-equipos', 'equipos.json', JSON.stringify(todos, null, 2))
+}
+
 async function empezar($: $, esc: Escena) {
   const actual = await read($, escenaA)
   if (actual && esc.tipo === 'fiesta' && actual.tipo !== 'fiesta') return // una fiesta no interrumpe otra escena
@@ -206,7 +243,8 @@ async function sondear($: $) {
 
   const horaEntrega = Date.parse(json(await git($, ['show', 'origin/main:.claude/oficina.json'])).entrega || '') || undefined
   const proyecto = (await git($, ['show', 'origin/main:PROYECTO.md'])).slice(0, 8000) || undefined
-  await update($, eqA, () => ({ yo, equipo, ultimo, bloqueados, progreso, personajes, tareas, entrega: horaEntrega, proyecto }))
+  const compus = { ...json(await git($, ['show', 'origin/oficina-equipos:equipos.json'])), ...((await read($, eqA)).compus || {}) } as Record<string, Compu>
+  await update($, eqA, () => ({ yo, equipo, ultimo, bloqueados, progreso, personajes, tareas, entrega: horaEntrega, proyecto, compus }))
   if (avisos.length) await update($, actividadA, l => [...avisos.map(texto => ({ t: now, texto })).reverse(), ...l].slice(0, 8))
   for (const rol of new Set(nuevas)) await entrega($, rol, now)
   if (!primera && llegaron.length) await empezar($, { tipo: 'llegada', start: now, mensaje: llegaron[0].nombre, rol: llegaron[0].rol })
@@ -297,6 +335,7 @@ export const register: Register = on => {
     void $.ui.open({ id: PANE, title: 'Oficina Hackatec' })
     await marcar($, 'listo')
     await sondear($)
+    void compartirCompu($)
     const eq = await read($, eqA)
     if (eq.yo.rol !== 'coordinador' && !(await $.store.get('bienvenida'))) {
       await empezar($, { tipo: 'llegada', start: await $.clock.now(), mensaje: eq.yo.nombre, rol: eq.yo.rol })
@@ -466,7 +505,7 @@ export const register: Register = on => {
             {de('en curso').map(t => (
               <Box key={t.archivo} flexDirection="column">
                 <Text>{t.titulo} <Text dimColor>· {nombreDe(t.rol)}</Text></Text>
-                <Text color="green" mono>{barra(t)} {progresoTexto(t, now)}</Text>
+                <Text color="green">{barra(t)} {progresoTexto(t, now)}</Text>
               </Box>
             ))}
           </Box>
@@ -479,12 +518,23 @@ export const register: Register = on => {
           {tareas.length > 0 && (
             <Box flexDirection="column">
               <Text bold>Resumen</Text>
-              <Text color="green" mono>{barra({ hechos: de('hecha').length, total: tareas.length })} {Math.round((de('hecha').length / tareas.length) * 100)}% del proyecto ({de('hecha').length}/{tareas.length} tareas{de('en revisión').length ? `, ${de('en revisión').length} en revisión` : ''})</Text>
+              <Text color="green">{barra({ hechos: de('hecha').length, total: tareas.length })} {Math.round((de('hecha').length / tareas.length) * 100)}% del proyecto ({de('hecha').length}/{tareas.length} tareas{de('en revisión').length ? `, ${de('en revisión').length} en revisión` : ''})</Text>
               <Text dimColor>Trabajo estimado que falta: {duracion(tareas.filter(t => !['hecha', 'en revisión'].includes(categoria(t.estado))).reduce((s, t) => s + Math.max(0, t.estimado - (t.inicio ? (now - t.inicio) / 60000 : 0)), 0))}</Text>
               <Text dimColor>Hechas por persona: {ms.map(m => `${m.nombre} ${tareas.filter(t => t.rol === m.rol && categoria(t.estado) === 'hecha').length}`).join(' · ')}</Text>
             </Box>
           )}
           {eq.entrega && <Text bold color={eq.entrega - now < 3600000 ? 'red' : undefined}>{eq.entrega > now ? `Faltan ${duracion((eq.entrega - now) / 60000)} para la entrega` : 'Ya pasó la hora de entrega'}</Text>}
+          {Object.keys(eq.compus ?? {}).length > 0 && (
+            <Box flexDirection="column">
+              <Text bold>Computadoras</Text>
+              {ms.map(m => {
+                const c = eq.compus?.[m.nombre.toLowerCase()]
+                if (!c) return null
+                const aviso = c.nivel === 'básica' || c.disco < 5
+                return <Text color={aviso ? 'yellow' : undefined} dimColor={!aviso}>{m.nombre}: {c.nivel} · {c.ram} GB RAM · {c.nucleos} núcleos · {c.disco} GB libres{c.disco < 5 ? ' · poco espacio' : ''}</Text>
+              })}
+            </Box>
+          )}
           {actividad.length > 0 && (
             <Box flexDirection="column">
               <Text bold>Actividad</Text>
