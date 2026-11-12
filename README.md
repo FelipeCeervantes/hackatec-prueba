@@ -22,7 +22,7 @@ Es el plugin `oficina@hackatec-prueba` de este repo. La primera vez que abras es
 - Cada bichito muestra lo que hace su Claude: trabajando, pensando, esperando tu permiso, festejando al terminar, dormido o explorando el espacio si pasa mucho rato sin actividad.
 - La barra bajo cada cuarto muestra el avance de su tarea (casillas de "Listo cuando") y el tiempo que falta según el `estimado`.
 - Cuando alguien sube su rama, su bichito camina a entregarle el folder al coordinador. Si una tarea queda `bloqueado`, se pone triste. Cuando se une un avance a `main`, todos festejan.
-- Botones: **Cerrar el día** (todos se van a dormir a la luna), **Modo pro** (lista sobria, sin mascotas), **Tamaño**, **Mi personaje** (color y accesorio; todo el equipo lo ve) y, solo para el coordinador, **Alerta** (todos se sorprenden, dan vueltitas y se juntan con él a escucharlo; sin sonido).
+- Botones: **Cerrar el día** (todos se van a dormir a la luna), **Modo pro** (lista sobria, sin mascotas), **Tamaño**, **Mi personaje** (color y accesorio; todo el equipo lo ve) y, solo para el coordinador, **Alerta** (todos se sorprenden, dan vueltitas y se juntan con él a escucharlo, sin sonido; además el Claude de cada integrante revisa sus tareas y se pone a trabajar solo, igual que cuando le llega una tarea nueva).
 - **Desinstalar** (en Opciones): empacan y se van, y se quita el plugin y todo lo que guardó en tu laptop (también lo hace `/salir`). Para volver a tenerla, borra `.claude/settings.local.json` y abre de nuevo la carpeta.
 
 ## Después de la prueba
