@@ -1,0 +1,12 @@
+{
+  "felipe": {
+    "cpu": "AMD Ryzen 5 8645HS w/ Radeon 760M Graphics",
+    "nucleos": 12,
+    "ram": 15.3,
+    "disco": 20.9,
+    "gpu": "Parsec Virtual Display Adapter / NVIDIA GeForce RTX 4050 Laptop GPU / AMD Radeon(TM) Graphics",
+    "so": "Microsoft Windows 10 Home",
+    "nivel": "potente",
+    "t": 1794492096621
+  }
+}
