@@ -22,4 +22,5 @@ Problema: $ARGUMENTS
    ## Archivos/área
    ```
 4. Primero define el contrato entre backend y frontend (rutas y forma del JSON) en `tareas/contrato.md`, para que ambos puedan trabajar en paralelo.
-5. Haz commit y push a `main`, y resume quién tiene qué.
+5. Escribe `PROYECTO.md` en la raíz (todo el equipo lo ve en su panel de la oficina): `# <nombre del proyecto>`, `## El problema` (el planteamiento tal cual), `## La idea` (el MVP en 3 o 4 líneas), `## El plan` (qué hace cada quien) y `## Qué se demuestra al final`. Corto y claro.
+6. Haz commit y push a `main` de `PROYECTO.md` y las tareas, y resume quién tiene qué.

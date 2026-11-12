@@ -11,6 +11,7 @@ export type Equipo = {
   personajes: Record<string, Personaje>
   tareas: Tarea[]
   entrega?: number // hora límite del evento (ms), de .claude/oficina.json
+  proyecto?: string // PROYECTO.md de main: el problema, la idea y el plan
 }
 export type Yo = { estado: string; t: number }
 export type Anim = { rol: string; start: number }
@@ -21,6 +22,7 @@ export type Vista = {
   modo: 'oficina' | 'pro'
   tam: 'chico' | 'mediano' | 'grande'
   panel: '' | 'menu' | 'alerta' | 'personaje' | 'desinstalar'
+  verProyecto?: boolean
 }
 
 declare module 'claude-code' {

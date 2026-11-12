@@ -17,5 +17,9 @@ Datos que dio el usuario (pueden venir vacíos): `$ARGUMENTS`.
    - Elige como máximo 3 en total, priorizando fuentes conocidas (anthropics, vercel-labs y repos con muchas instalaciones).
    - **Antes de instalar, muestra la lista al usuario y pide su OK.** Luego instala con `npx skills add <owner/repo> --skill <nombre>`, dentro del proyecto (no global).
    - Si `npx` no existe o no hay resultados, sigue sin skills y avísalo. Como alternativa puede usar `/plugin` para buscar en el marketplace.
-5. La oficina: es el plugin `oficina@hackatec-prueba` de este repo (un panel junto al chat). Dile que la próxima vez que abra la carpeta `hackatec-prueba` en la pestaña Code, la app le pedirá confiar en la carpeta e instalar el plugin de la oficina: que acepte. Ahí su bichito le da la bienvenida. Si el panel no aparece, que escriba `/oficina`; si dice que el comando no existe, que escriba `/plugin install oficina@hackatec-prueba`.
-6. Termina con este mensaje corto: su nombre y rol, que ya puede cerrar la sesión, y que el día del evento abre la carpeta `hackatec-prueba` en la pestaña Code y escribe "haz mis tareas". Si ya hay tareas pendientes de su rol, menciónalas.
+5. **Instala la oficina y compruébalo.** El plugin vive en este repo: su marketplace es el `name` de `.claude-plugin/marketplace.json` y el repo es el `origin` de git (dueño/repo).
+   - Corre `claude plugin marketplace add <dueño/repo> --scope local` y luego `claude plugin install oficina@<marketplace> --scope local`.
+   - Verifica con `claude plugin list` que `oficina@<marketplace>` diga enabled. Si falló, corre `claude plugin marketplace update <marketplace>` y reintenta una vez.
+   - Si el comando `claude` no existe en esta laptop, no pasa nada: dile que al abrir la carpeta en la pestaña Code acepte confiar en la carpeta e instalar el plugin de la oficina; si no se lo ofrece, que escriba `/plugin install oficina@<marketplace>`.
+   - Dile que la oficina aparece como un panel junto al chat cada vez que abra esta carpeta.
+6. Termina con este mensaje corto: su nombre y rol, que ya puede cerrar la sesión, y que el día del evento abre esta carpeta en la pestaña Code y escribe "haz mis tareas". Si ya hay tareas pendientes de su rol, menciónalas.

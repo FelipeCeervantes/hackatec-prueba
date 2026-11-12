@@ -185,7 +185,8 @@ async function sondear($: $) {
   const personajes = json(await git($, ['show', 'origin/oficina-personajes:personajes.json'])) as Record<string, Personaje>
 
   const horaEntrega = Date.parse(json(await git($, ['show', 'origin/main:.claude/oficina.json'])).entrega || '') || undefined
-  await update($, eqA, () => ({ yo, equipo, ultimo, bloqueados, progreso, personajes, tareas, entrega: horaEntrega }))
+  const proyecto = (await git($, ['show', 'origin/main:PROYECTO.md'])).slice(0, 8000) || undefined
+  await update($, eqA, () => ({ yo, equipo, ultimo, bloqueados, progreso, personajes, tareas, entrega: horaEntrega, proyecto }))
   if (avisos.length) await update($, actividadA, l => [...avisos.map(texto => ({ t: now, texto })).reverse(), ...l].slice(0, 8))
   for (const rol of new Set(nuevas)) await entrega($, rol, now)
   if (!primera && llegaron.length) await empezar($, { tipo: 'llegada', start: now, mensaje: llegaron[0].nombre, rol: llegaron[0].rol })
@@ -214,7 +215,7 @@ async function marcar($: $, estado: string) {
 async function cambiarVista($: $, cambio: Partial<Vista>) {
   const v = { ...(await read($, vistaA)), ...cambio }
   await update($, vistaA, () => v)
-  await $.store.set('vista', { modo: v.modo, tam: v.tam })
+  await $.store.set('vista', { modo: v.modo, tam: v.tam, verProyecto: v.verProyecto })
 }
 
 async function guardarPersonaje($: $, cambio: Personaje) {
@@ -238,10 +239,15 @@ async function enviarAlerta($: $, mensaje: string) {
 async function desinstalar($: $) {
   await cambiarVista($, { panel: '' })
   await empezar($, { tipo: 'adios', start: await $.clock.now() })
-  const ruta = `${raiz}/.claude/settings.local.json`
-  const s = json(await leer($, ruta))
-  s.enabledPlugins = { ...(s.enabledPlugins || {}), [PLUGIN_ID]: false }
-  await $.fs.write(ruta, JSON.stringify(s, null, 2))
+  // Limpieza completa: plugin, marketplace, caché, índices y datos (scripts/limpiar.mjs).
+  const r = await $.process.run(['node', 'scripts/limpiar.mjs'], { cwd: raiz, timeoutMs: 120000 }).catch(() => null)
+  if (!r || r.exitCode !== 0) { // sin node: por lo menos se apaga en esta carpeta
+    const ruta = `${raiz}/.claude/settings.local.json`
+    const s = json(await leer($, ruta))
+    s.enabledPlugins = { ...(s.enabledPlugins || {}), [PLUGIN_ID]: false }
+    await $.fs.write(ruta, JSON.stringify(s, null, 2))
+  }
+  for (const k of ['vista', 'bienvenida']) await $.store.delete(k).catch(() => {})
   $.clock.after(12000, () => void $.ui.close({ id: PANE }))
 }
 
@@ -317,7 +323,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const ui = $.ui.resolve(e)
-    const { Box, Text, Button, Input, Select } = ui
+    const { Box, Text, Button, Input, Select, Markdown } = ui
     const Svg = e.surface !== 'terminal' && 'Svg' in ui ? ui.Svg : undefined // la terminal no dibuja SVG: ahí va la lista
     await read($, tickA)
     const now = await $.clock.now()
@@ -413,11 +419,21 @@ export const register: Register = on => {
         )}
         {vista.panel === 'desinstalar' && (
           <Box flexDirection="column" gap={1}>
-            <Text>¿Quitar la oficina de esta carpeta? Se apaga solo en tu laptop; puedes volver a activarla borrando .claude/settings.local.json.</Text>
+            <Text>¿Quitar la oficina de esta laptop? Se borra el plugin y todo lo que guardó, sin tocar el repo ni tu trabajo. Para volver a tenerla, borra .claude/settings.local.json y vuelve a abrir la carpeta.</Text>
             <Box flexDirection="row" gap={1}>
               <Button key="si" label="Sí, desinstalar" onPress={() => desinstalar($)} />
               <Button key="no" label="Cancelar" onPress={() => cambiarVista($, { panel: '' })} />
             </Box>
+          </Box>
+        )}
+
+        {eq.proyecto && (
+          <Box flexDirection="column">
+            <Box flexDirection="row" gap={1}>
+              <Text bold>El proyecto</Text>
+              <Button key="proy" label={vista.verProyecto === false ? 'Ver' : 'Ocultar'} dimColor onPress={() => cambiarVista($, { verProyecto: vista.verProyecto === false })} />
+            </Box>
+            {vista.verProyecto !== false && <Markdown text={eq.proyecto} />}
           </Box>
         )}
 
