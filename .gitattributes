@@ -1,0 +1,3 @@
+# Siempre LF: las skills y el plugin leen mal los saltos de línea de Windows (CRLF).
+* text=auto eol=lf
+*.pdf binary
