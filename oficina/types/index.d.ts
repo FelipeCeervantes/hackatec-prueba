@@ -10,12 +10,13 @@ export type Equipo = {
   progreso: Record<string, Progreso>
   personajes: Record<string, Personaje>
   tareas: Tarea[]
+  entrega?: number // hora límite del evento (ms), de .claude/oficina.json
 }
 export type Yo = { estado: string; t: number }
 export type Anim = { rol: string; start: number }
 export type Aviso = { t: number; texto: string }
 export type Solicitud = { numero: number; login: string; nombre: string }
-export type Escena = { tipo: 'luna' | 'adios' | 'fiesta' | 'alerta'; start: number; mensaje?: string; auto?: boolean }
+export type Escena = { tipo: 'luna' | 'adios' | 'fiesta' | 'alerta' | 'llegada'; start: number; mensaje?: string; auto?: boolean; rol?: string }
 export type Vista = {
   modo: 'oficina' | 'pro'
   tam: 'chico' | 'mediano' | 'grande'

@@ -266,6 +266,13 @@ export function svgOficina(x: Escenario): string {
       mov = unaVez(`m${i}`, 7000, E)
       extra = `<g${unaVez('cargar', 7000, E)}>${caja(9, -12)}</g>`
     } else if (tipo === 'fiesta') { pose = 'celebrando'; etiqueta = '¡a festejar!' }
+    else if (tipo === 'llegada') {
+      if (m.rol === escena?.rol) { // entra caminando desde la izquierda y saluda
+        pose = E < 3000 ? 'caminando' : 'saludando'; etiqueta = '¡llegó!'
+        keyframes += `@keyframes m${i}{0%{transform:translateX(${n2(-c.hx - 40)}px)}55%,100%{transform:translateX(0)}}`
+        mov = unaVez(`m${i}`, 5500, E)
+      } else { pose = E < 3000 ? 'sorprendido' : 'feliz'; etiqueta = '¡hola!' }
+    }
     else if (tipo === 'alerta') {
       if (E < 1500) { pose = 'sorprendido'; extra = burbuja(16, -8, '!') }
       else if (E < 3500) { pose = 'caminando'; clase = 'giro' }
@@ -314,7 +321,11 @@ export function svgOficina(x: Escenario): string {
     encima += `<g style="animation:cohete 7.5s ease-in-out 1 forwards;animation-delay:-${(E / 1000).toFixed(2)}s">${cohete(W / 2, FLOOR - 32, true)}</g>`
     keyframes += '@keyframes cohete{0%{transform:translateY(-140px)}26.7%,66.7%{transform:translateY(0)}100%{transform:translateY(-170px)}}'
   }
-  if (tipo === 'fiesta') {
+  if (tipo === 'llegada') {
+    for (let k = 0; k < 30; k++)
+      encima += `<g class="conf" style="animation-delay:-${((k * 0.41) % 3).toFixed(2)}s">${r((k * 53) % W, 0, 2, 1, ['#f5d142', '#fff', '#7fd16b'][k % 3])}</g>`
+    encima += dialogo(`¡${escena?.mensaje || 'Alguien'} se unió al equipo!`, 'denle la bienvenida')
+  } else if (tipo === 'fiesta') {
     for (let k = 0; k < 60; k++)
       encima += `<g class="conf" style="animation-delay:-${((k * 0.37) % 3).toFixed(2)}s">${r((k * 41) % W, 0, 2, 1, ['#d64545', '#f5d142', '#3a6ff0', '#3fa34d', '#fff'][k % 5])}</g>`
     encima += dialogo('¡Se unió un avance al proyecto!', '¡bien, equipo!')

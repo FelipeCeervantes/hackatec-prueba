@@ -26,9 +26,9 @@ const actividadA = atom({ plugin: 'oficina', key: 'actividad' } as const, [] as 
 
 // Momentos en que cambia la cara o la pose dentro de cada escena (para redibujar justo ahí).
 const CORTES: Record<Escena['tipo'], number[]> = {
-  luna: [2000, 7500], adios: [2500, 7000], fiesta: [4500], alerta: [600, 1500, 3500, 6000, 10000, 12500],
+  luna: [2000, 7500], adios: [2500, 7000], fiesta: [4500], alerta: [600, 1500, 3500, 6000, 10000, 12500], llegada: [3000, 5500],
 }
-const FIN: Record<Escena['tipo'], number> = { luna: 0, adios: 0, fiesta: 4500, alerta: 12500 }
+const FIN: Record<Escena['tipo'], number> = { luna: 0, adios: 0, fiesta: 4500, alerta: 12500, llegada: 5600 }
 
 let raiz = ''
 let ramas: Record<string, string> = {}
@@ -37,6 +37,7 @@ let alertaT = 0
 let primera = true
 let lunaAuto = false
 const estados: Record<string, string> = {}
+const conocidos = new Set<string>()
 let repoActual = '' // "dueño/repo" del remoto origin
 let token = ''
 const avisadas = new Set<number>()
@@ -169,6 +170,9 @@ async function sondear($: $) {
     if (!primera && antes !== ahora) avisos.push(`${nombreDe(t.rol)}: "${t.titulo}" ${ahora === 'pendiente' ? 'es nueva' : `pasó a ${ahora}`}`)
     estados[t.archivo] = ahora
   }
+  const llegaron = equipo.filter(m => !conocidos.has(m.nombre.toLowerCase()))
+  for (const m of equipo) conocidos.add(m.nombre.toLowerCase())
+  if (!primera) for (const m of llegaron) avisos.push(`${m.nombre} se unió al equipo`)
   for (const rol of new Set(nuevas)) avisos.push(`${nombreDe(rol)} subió avances`)
   if (fiesta) avisos.push('Se unió un avance al proyecto')
 
@@ -180,10 +184,12 @@ async function sondear($: $) {
   alertaT = a.t || alertaT
   const personajes = json(await git($, ['show', 'origin/oficina-personajes:personajes.json'])) as Record<string, Personaje>
 
-  await update($, eqA, () => ({ yo, equipo, ultimo, bloqueados, progreso, personajes, tareas }))
+  const horaEntrega = Date.parse(json(await git($, ['show', 'origin/main:.claude/oficina.json'])).entrega || '') || undefined
+  await update($, eqA, () => ({ yo, equipo, ultimo, bloqueados, progreso, personajes, tareas, entrega: horaEntrega }))
   if (avisos.length) await update($, actividadA, l => [...avisos.map(texto => ({ t: now, texto })).reverse(), ...l].slice(0, 8))
   for (const rol of new Set(nuevas)) await entrega($, rol, now)
-  if (fiesta) await empezar($, { tipo: 'fiesta', start: now })
+  if (!primera && llegaron.length) await empezar($, { tipo: 'llegada', start: now, mensaje: llegaron[0].nombre, rol: llegaron[0].rol })
+  else if (fiesta) await empezar($, { tipo: 'fiesta', start: now })
   primera = false
 }
 
@@ -246,7 +252,8 @@ async function avanzarGuia($: $) {
   if (paso >= total) await $.store.set('bienvenida', true)
 }
 
-const barra = (p: Progreso) => {
+const duracion = (min: number) => { const m = Math.round(min); return m < 60 ? `${m} min` : m < 1440 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 1440)} d ${Math.floor((m % 1440) / 60)} h` }
+const barra = (p: { hechos: number; total: number }) => {
   const n = p.total ? Math.round((p.hechos / p.total) * 10) : 0
   return '█'.repeat(n) + '░'.repeat(10 - n)
 }
@@ -265,6 +272,7 @@ export const register: Register = on => {
     await sondear($)
     const eq = await read($, eqA)
     if (eq.yo.rol !== 'coordinador' && !(await $.store.get('bienvenida'))) {
+      await empezar($, { tipo: 'llegada', start: await $.clock.now(), mensaje: eq.yo.nombre, rol: eq.yo.rol })
       await update($, guiaA, () => 0)
       const t = $.clock.every(7000, () => void (async () => { if ((await read($, guiaA)) < 0) t.cancel(); else await avanzarGuia($) })())
     }
@@ -430,6 +438,15 @@ export const register: Register = on => {
           {lista('Pendientes', 'pendiente', 6)}
           {lista('Hechas', 'hecha', 5)}
           {tareas.length === 0 && <Text dimColor>Todavía no hay tareas. Se crean con /repartir.</Text>}
+          {tareas.length > 0 && (
+            <Box flexDirection="column">
+              <Text bold>Resumen</Text>
+              <Text color="green" mono>{barra({ hechos: de('hecha').length, total: tareas.length })} {Math.round((de('hecha').length / tareas.length) * 100)}% del proyecto ({de('hecha').length}/{tareas.length} tareas)</Text>
+              <Text dimColor>Trabajo estimado que falta: {duracion(tareas.filter(t => categoria(t.estado) !== 'hecha').reduce((s, t) => s + Math.max(0, t.estimado - (t.inicio ? (now - t.inicio) / 60000 : 0)), 0))}</Text>
+              <Text dimColor>Hechas por persona: {ms.map(m => `${m.nombre} ${tareas.filter(t => t.rol === m.rol && categoria(t.estado) === 'hecha').length}`).join(' · ')}</Text>
+            </Box>
+          )}
+          {eq.entrega && <Text bold color={eq.entrega - now < 3600000 ? 'red' : undefined}>{eq.entrega > now ? `Faltan ${duracion((eq.entrega - now) / 60000)} para la entrega` : 'Ya pasó la hora de entrega'}</Text>}
           {actividad.length > 0 && (
             <Box flexDirection="column">
               <Text bold>Actividad</Text>
