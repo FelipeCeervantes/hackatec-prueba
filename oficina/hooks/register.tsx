@@ -41,6 +41,20 @@ const conocidos = new Set<string>()
 let repoActual = '' // "dueño/repo" del remoto origin
 let token = ''
 const avisadas = new Set<number>()
+let ultimoEmpujon = 0
+
+// Pone a trabajar al Claude de un integrante (nunca al coordinador): deja en fila un mensaje que
+// arranca un turno en cuanto la sesión está libre. Máximo uno cada 2 minutos.
+async function ponerATrabajar($: $, motivo: string) {
+  if ((await read($, eqA)).yo.rol === 'coordinador') return
+  const now = await $.clock.now()
+  if (now - ultimoEmpujon < 120000) return
+  ultimoEmpujon = now
+  $.ui.toast(`${motivo}: tu Claude empieza con tus tareas.`)
+  void $.prompt.submit({
+    text: `${motivo}. Haz git pull, revisa tus tareas (primero las que tengan cambios pedidos) y trabaja en la siguiente, siguiendo el Flujo de CLAUDE.md. Si no tienes tareas, dilo en una línea y termina.`,
+  }).catch(() => {})
+}
 
 const json = (t: string) => { try { return JSON.parse(t) } catch { return {} } }
 
@@ -168,8 +182,10 @@ async function sondear($: $) {
   // Actividad reciente: cambios de estado de las tareas, entregas, fiestas y alertas.
   const nombreDe = (rol: string) => equipo.find(m => m.rol === rol)?.nombre || rol
   const avisos: string[] = []
+  let tareaNueva = false
   for (const t of tareas) {
     const antes = estados[t.archivo], ahora = categoria(t.estado)
+    if (!primera && antes !== ahora && t.rol === yo.rol && (ahora === 'pendiente' || ahora === 'con cambios pedidos')) tareaNueva = true
     if (!primera && antes !== ahora) avisos.push(`${nombreDe(t.rol)}: "${t.titulo}" ${ahora === 'pendiente' ? 'es nueva' : `pasó a ${ahora}`}`)
     estados[t.archivo] = ahora
   }
@@ -183,7 +199,8 @@ async function sondear($: $) {
   if (!primera && a.t && a.t !== alertaT) {
     avisos.push(`Alerta: ${a.mensaje || ''}`)
     await empezar($, { tipo: 'alerta', start: now, mensaje: String(a.mensaje || '') })
-  }
+    await ponerATrabajar($, `Alerta del coordinador: "${a.mensaje || ''}"`)
+  } else if (tareaNueva) await ponerATrabajar($, 'Tienes tareas nuevas')
   alertaT = a.t || alertaT
   const personajes = json(await git($, ['show', 'origin/oficina-personajes:personajes.json'])) as Record<string, Personaje>
 
